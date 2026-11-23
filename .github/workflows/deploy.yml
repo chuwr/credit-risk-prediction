@@ -1,0 +1,50 @@
+name: Deploy to Hugging Face Spaces
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Hugging Face Hub
+        run: pip install "huggingface_hub>=0.30,<1.0"
+
+      - name: Upload files to Hugging Face
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          python - <<'PY'
+          import os
+          from huggingface_hub import HfApi
+
+          api = HfApi(token=os.environ["HF_TOKEN"])
+          repo_id = "Treceeeee/credit-risk-prediction"
+
+          for filename in [
+              "app.py",
+              "README.md",
+              "requirements.txt",
+              "feature_names.pkl",
+          ]:
+              api.upload_file(
+                  path_or_fileobj=filename,
+                  path_in_repo=filename,
+                  repo_id=repo_id,
+                  repo_type="space",
+                  commit_message=f"CI/CD: update {filename}",
+              )
+
+          print("Deployment files uploaded successfully.")
+          PY
